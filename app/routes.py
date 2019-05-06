@@ -3,8 +3,8 @@ from app import app
 from app.forms import QueryForm
 
 #from app.pretrainedBERT.examples import run_squad
-import sys
-sys.path.append('./fastai')
+#import sys
+#sys.path.append('/home/fastai')
 
 from fastai import *
 from fastai.vision import *
@@ -21,13 +21,52 @@ import time
 import importlib
 import warnings
 import os, re
+#from pathlib import *
 
 #from pathlib import Path
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 this_is_cpu=0
-DATAPATH = Path('/Users/davidbressler/pythonstuff/local_FD/')
+#DATAPATH = Path('/Users/davidbressler/pythonstuff/local_FD/')
+DATAPATH = Path('/data/')
+
+tfms = get_transforms(do_flip=True, flip_vert=True, max_rotate=45, max_zoom=1.2, max_lighting=0.2,
+                     max_warp=None, p_affine=1, p_lighting=.5)
+the_classes=pickle.load(open(DATAPATH/'the_classes_33c.pkl', 'rb')) #load the model
+
+torch.nn.Module.dump_patches = True
+
+learn = load_learner(DATAPATH)
+model=learn.model
+if this_is_cpu==1:
+    model=model.cpu()
+
+model = model.eval()#important to set to eval mode for testing
+
+outputs_list=[]
+#im_filename='psoriasis_03.jpg'
+im_filename='dermatofibroma_03.jpg'
+#im_filename='molluscum_03.jpg'
+for i in range(8):
+    if this_is_cpu==1:
+        img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0)
+    else:
+        img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0).cuda()
+    outputs_list.append(model(img1))
+
+
+output=torch.sum(torch.stack(outputs_list),dim=0)
+preds = torch.max(output, dim=1)[1]
+preds=preds.cpu().data.numpy()[0].astype(int)
+answer_hier3=the_classes[preds]
+
+#print the answer
+df_hierarchy_labels = pd.read_csv(DATAPATH/'hierarchy_labels_processed.csv')
+print('predicted:')
+#print(answer_hier3)
+print(df_hierarchy_labels[df_hierarchy_labels['hier3']==answer_hier3]['name'].values)
+
 
 #from bs4 import BeautifulSoup
 
