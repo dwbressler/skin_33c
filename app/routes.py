@@ -1,71 +1,67 @@
+import sys
+#sys.path.append('/home/fastai')
+sys.path.append('/Users/davidbressler/pythonstuff/fastai')
+
+this_is_cpu=0
+
+
 from flask import render_template, flash, redirect
 from app import app
 from app.forms import QueryForm
+from app.forms import UploadForm
 
-#from app.pretrainedBERT.examples import run_squad
-#import sys
-#sys.path.append('/home/fastai')
+from flask import url_for, redirect, render_template
+from flask_wtf import Form
+from flask_wtf.file import FileField
+from werkzeug import secure_filename
 
-from fastai import *
-from fastai.vision import *
-from fastai.tabular import *
-from fastai.vision.learner import cnn_config
 
-import torch.utils.data as data_utils
-from torch.utils.data.dataset import Dataset
-from torch.utils.data.sampler import Sampler
-from torch.autograd import Variable
-import torchvision.transforms as transforms
 
 import time
 import importlib
 import warnings
 import os, re
 #from pathlib import *
-
-#from pathlib import Path
-from PIL import ImageFile
-ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-this_is_cpu=0
-#DATAPATH = Path('/Users/davidbressler/pythonstuff/local_FD/')
-DATAPATH = Path('/data/')
-
-tfms = get_transforms(do_flip=True, flip_vert=True, max_rotate=45, max_zoom=1.2, max_lighting=0.2,
-                     max_warp=None, p_affine=1, p_lighting=.5)
-the_classes=pickle.load(open(DATAPATH/'the_classes_33c.pkl', 'rb')) #load the model
-
-torch.nn.Module.dump_patches = True
-
-learn = load_learner(DATAPATH)
-model=learn.model
 if this_is_cpu==1:
-    model=model.cpu()
+    from pathlib import Path
 
-model = model.eval()#important to set to eval mode for testing
+if this_is_cpu==0:
+    from fastai import *
+    from fastai.vision import *
+    from fastai.tabular import *
+    from fastai.vision.learner import cnn_config
 
-outputs_list=[]
-#im_filename='psoriasis_03.jpg'
-im_filename='dermatofibroma_03.jpg'
-#im_filename='molluscum_03.jpg'
-for i in range(8):
+    import torch.utils.data as data_utils
+    from torch.utils.data.dataset import Dataset
+    from torch.utils.data.sampler import Sampler
+    from torch.autograd import Variable
+    import torchvision.transforms as transforms
+
+    from PIL import ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+    tfms = get_transforms(do_flip=True, flip_vert=True, max_rotate=45, max_zoom=1.2, max_lighting=0.2,
+                        max_warp=None, p_affine=1, p_lighting=.5)
+    the_classes=pickle.load(open(DATAPATH/'the_classes_33c.pkl', 'rb')) #load the model
+
+    torch.nn.Module.dump_patches = True
+
+    learn = load_learner(DATAPATH)
+    model=learn.model
     if this_is_cpu==1:
-        img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0)
-    else:
-        img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0).cuda()
-    outputs_list.append(model(img1))
+        model=model.cpu()
+
+    model = model.eval()#important to set to eval mode for testing
 
 
-output=torch.sum(torch.stack(outputs_list),dim=0)
-preds = torch.max(output, dim=1)[1]
-preds=preds.cpu().data.numpy()[0].astype(int)
-answer_hier3=the_classes[preds]
+if this_is_cpu==1:
+    DATAPATH = '/Users/davidbressler/pythonstuff/uploads/'
+else:
+    DATAPATH = '/data/'
+    
 
-#print the answer
-df_hierarchy_labels = pd.read_csv(DATAPATH/'hierarchy_labels_processed.csv')
-print('predicted:')
-#print(answer_hier3)
-print(df_hierarchy_labels[df_hierarchy_labels['hier3']==answer_hier3]['name'].values)
+
+
 
 
 #from bs4 import BeautifulSoup
@@ -91,24 +87,73 @@ print(df_hierarchy_labels[df_hierarchy_labels['hier3']==answer_hier3]['name'].va
 # model.to(device) 
 # model.eval()
 
-
 @app.route('/', methods=['GET', 'POST'])
-@app.route('/index', methods=['GET', 'POST'])
-def index():
-    print(app.root_path)
-    form= QueryForm()
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    form = UploadForm()
+
     if form.validate_on_submit():
-        
-        the_answer='bla'
-        wik_url="https://en.wikipedia.org/wiki/Janis_Joplin"
+        im_filename = secure_filename(form.file.data.filename)
+        form.file.data.save(DATAPATH + im_filename)
+        the_answer='something'
+        if this_is_cpu==0:
 
-        return render_template('index.html',title='Home', form=form, wik_url=wik_url, the_wik_search=None, the_query=None, the_answer=the_answer)
+            outputs_list=[]
+            #im_filename='psoriasis_03.jpg'
+            #im_filename='dermatofibroma_03.jpg'
+            #im_filename='molluscum_03.jpg'
+            for i in range(8):
+                if this_is_cpu==1:
+                    img1=open_image(DATAPATH + im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0)
+                else:
+                    img1=open_image(DATAPATH + im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0).cuda()
+                outputs_list.append(model(img1))
 
-        #flash('Your Query: {}'.format(
-        #    form.the_query.data))
-        #flash('The Document: {}'.format(
-        #    form.the_document.data))
-        #return redirect('/index')
-    return render_template('index.html',title='Home', form=form, wik_url="https://en.wikipedia.org/wiki/Janis_Joplin", the_wik_search=None, the_query=None, the_answer="January 19, 1943")
+
+            output=torch.sum(torch.stack(outputs_list),dim=0)
+            preds = torch.max(output, dim=1)[1]
+            preds=preds.cpu().data.numpy()[0].astype(int)
+            answer_hier3=the_classes[preds]
+
+            #print the answer
+            df_hierarchy_labels = pd.read_csv(DATAPATH + 'hierarchy_labels_processed.csv')
+            #print('predicted:')
+            #print(answer_hier3)
+            the_answer=df_hierarchy_labels[df_hierarchy_labels['hier3']==answer_hier3]['name'].values
+
+
+        return render_template('upload.html', form=form, the_answer=the_answer)
+        #return redirect(url_for('upload'))
+
+    return render_template('upload.html', form=form, the_answer=None)
+
+
+
+
+# @app.route('/', methods=['GET', 'POST'])
+# @app.route('/index', methods=['GET', 'POST'])
+# def index():
+#     print(app.root_path)
+#     #form= QueryForm()
+#     form= PhotoForm()
+#     if form.validate_on_submit():
+#         f = form.photo.data
+#         filename = secure_filename(f.filename)
+
+
+
+#         the_answer='bla'
+#         wik_url="https://en.wikipedia.org/wiki/Janis_Joplin"
+
+#         #return render_template('index.html',title='Home', form=form, wik_url=wik_url, the_wik_search=None, the_query=None, the_answer=the_answer)
+#         return render_template('index.html',title='Home', form=form)
+
+#         #flash('Your Query: {}'.format(
+#         #    form.the_query.data))
+#         #flash('The Document: {}'.format(
+#         #    form.the_document.data))
+#         #return redirect('/index')
+#     #return render_template('index.html',title='Home', form=form, wik_url="https://en.wikipedia.org/wiki/Janis_Joplin", the_wik_search=None, the_query=None, the_answer="January 19, 1943")
+#     return render_template('index.html',title='Home', form=form)
 
 

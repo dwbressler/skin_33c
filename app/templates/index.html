@@ -101,26 +101,19 @@
                     </style>
 
         </head>
-        <body onload="grabTheData()">
 {% block content %}
         <div class="nlcontainer">
           <div class="nlwrapper">
-        <h1>Wikipedia Natural Language Search</h1>
-        <form action="" method="post" novalidate>
+        <h1>Skin Image Classifier</h1>
+        <form form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-        <p id = the_wik_url >{{ wik_url }}</p>
         <div class="forminput">
         <p>
-            {{ form.the_wik_search.label }}<br>
-            {{ form.the_wik_search(size=32) }}
-        </p>
-        <p>
-            {{ form.the_query.label }}<br>
-            {{ form.the_query(size=32) }}
+            {{ form.file }}
         </p>
       </div>
       <div class="submitbox">
-        <p>{{ form.submit() }}</p>
+          <input type="submit">
       </div>
       </div>
       </div>
