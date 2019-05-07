@@ -25,6 +25,12 @@ import os, re
 if this_is_cpu==1:
     from pathlib import Path
 
+if this_is_cpu==1:
+    DATAPATH = '/Users/davidbressler/pythonstuff/uploads/'
+else:
+    DATAPATH = Path('/data/')
+    UPLOADPATH=('/data/')
+
 if this_is_cpu==0:
     from fastai import *
     from fastai.vision import *
@@ -54,10 +60,7 @@ if this_is_cpu==0:
     model = model.eval()#important to set to eval mode for testing
 
 
-if this_is_cpu==1:
-    DATAPATH = '/Users/davidbressler/pythonstuff/uploads/'
-else:
-    DATAPATH = '/data/'
+
     
 
 
@@ -94,7 +97,7 @@ def upload():
 
     if form.validate_on_submit():
         im_filename = secure_filename(form.file.data.filename)
-        form.file.data.save(DATAPATH + im_filename)
+        form.file.data.save(UPLOADPATH + im_filename)
         the_answer='something'
         if this_is_cpu==0:
 
@@ -104,9 +107,9 @@ def upload():
             #im_filename='molluscum_03.jpg'
             for i in range(8):
                 if this_is_cpu==1:
-                    img1=open_image(DATAPATH + im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0)
+                    img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0)
                 else:
-                    img1=open_image(DATAPATH + im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0).cuda()
+                    img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0).cuda()
                 outputs_list.append(model(img1))
 
 
@@ -116,7 +119,7 @@ def upload():
             answer_hier3=the_classes[preds]
 
             #print the answer
-            df_hierarchy_labels = pd.read_csv(DATAPATH + 'hierarchy_labels_processed.csv')
+            df_hierarchy_labels = pd.read_csv(DATAPATH/'hierarchy_labels_processed.csv')
             #print('predicted:')
             #print(answer_hier3)
             the_answer=df_hierarchy_labels[df_hierarchy_labels['hier3']==answer_hier3]['name'].values
