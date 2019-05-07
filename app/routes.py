@@ -25,11 +25,12 @@ import os, re
 if this_is_cpu==1:
     from pathlib import Path
 
+
+
 if this_is_cpu==1:
-    DATAPATH = '/Users/davidbressler/pythonstuff/uploads/'
-else:
-    DATAPATH = Path('/data/')
-    UPLOADPATH=('/data/')
+    UPLOADPATH = '/Users/davidbressler/pythonstuff/uploads/'
+
+    
 
 if this_is_cpu==0:
     from fastai import *
@@ -45,6 +46,9 @@ if this_is_cpu==0:
 
     from PIL import ImageFile
     ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+    DATAPATH = Path('/data/')
+    UPLOADPATH=('/data/')
 
     tfms = get_transforms(do_flip=True, flip_vert=True, max_rotate=45, max_zoom=1.2, max_lighting=0.2,
                         max_warp=None, p_affine=1, p_lighting=.5)
@@ -131,32 +135,5 @@ def upload():
     return render_template('upload.html', form=form, the_answer=None)
 
 
-
-
-# @app.route('/', methods=['GET', 'POST'])
-# @app.route('/index', methods=['GET', 'POST'])
-# def index():
-#     print(app.root_path)
-#     #form= QueryForm()
-#     form= PhotoForm()
-#     if form.validate_on_submit():
-#         f = form.photo.data
-#         filename = secure_filename(f.filename)
-
-
-
-#         the_answer='bla'
-#         wik_url="https://en.wikipedia.org/wiki/Janis_Joplin"
-
-#         #return render_template('index.html',title='Home', form=form, wik_url=wik_url, the_wik_search=None, the_query=None, the_answer=the_answer)
-#         return render_template('index.html',title='Home', form=form)
-
-#         #flash('Your Query: {}'.format(
-#         #    form.the_query.data))
-#         #flash('The Document: {}'.format(
-#         #    form.the_document.data))
-#         #return redirect('/index')
-#     #return render_template('index.html',title='Home', form=form, wik_url="https://en.wikipedia.org/wiki/Janis_Joplin", the_wik_search=None, the_query=None, the_answer="January 19, 1943")
-#     return render_template('index.html',title='Home', form=form)
 
 
