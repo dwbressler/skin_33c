@@ -102,7 +102,7 @@ def upload():
         form.file.data.save(UPLOADPATH + im_filename)
         the_answer='something'
         if this_is_cpu==0:
-
+            softmaxa = nn.Softmax(dim=0)
             outputs_list=[]
             #im_filename='psoriasis_03.jpg'
             #im_filename='dermatofibroma_03.jpg'
@@ -112,19 +112,30 @@ def upload():
                     img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0)
                 else:
                     img1=open_image(DATAPATH/im_filename).apply_tfms(tfms[0], size=224).data.unsqueeze(0).cuda()
-                outputs_list.append(model(img1))
+                model_out=model(img1)
+                model_out[0]=softmaxa(model_out[0])
+                outputs_list.append(model_out)
 
+            
+            #output=torch.sum(torch.stack(outputs_list),dim=0)
+            output=torch.mean(torch.stack(outputs_list),dim=0)
 
-            output=torch.sum(torch.stack(outputs_list),dim=0)
             preds = torch.max(output, dim=1)[1]
             preds=preds.cpu().data.numpy()[0].astype(int)
             answer_hier3=the_classes[preds]
+
+            top5probs,top5preds=torch.topk(output,5,dim=1)
+            top5preds=top5preds.cpu().data.numpy().astype(int)[0]
+            hier3_top5preds=[the_classes[preda] for preda in top5preds]
+
+
 
             #print the answer
             df_hierarchy_labels = pd.read_csv(DATAPATH/'hierarchy_labels_processed.csv')
             #print('predicted:')
             #print(answer_hier3)
             the_answer=df_hierarchy_labels[df_hierarchy_labels['hier3']==answer_hier3]['name'].values
+            answers_top5=[df_hierarchy_labels[df_hierarchy_labels['hier3']==bla]['name'].values for bla in hier3_top5preds]
 
 
         return render_template('upload.html', form=form, the_answer=the_answer)
