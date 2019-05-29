@@ -1,6 +1,6 @@
-import sys
+#import sys
 #sys.path.append('/home/fastai')
-sys.path.append('/Users/davidbressler/pythonstuff/fastai')
+#sys.path.append('/Users/davidbressler/pythonstuff/fastai')
 
 this_is_cpu=0
 
@@ -14,8 +14,6 @@ from flask import url_for, redirect, render_template
 from flask_wtf import Form
 from flask_wtf.file import FileField
 from werkzeug import secure_filename
-
-
 
 import time
 import importlib
